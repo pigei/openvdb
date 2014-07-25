@@ -1056,6 +1056,7 @@ processTypedScalarGrid(GridPtrType grid, OpType& op)
     if (grid->template isType<FloatGrid>())       doProcessTypedGrid<FloatGrid>(grid, op);
     else if (grid->template isType<DoubleGrid>()) doProcessTypedGrid<DoubleGrid>(grid, op);
     else if (grid->template isType<Int32Grid>())  doProcessTypedGrid<Int32Grid>(grid, op);
+    else if (grid->template isType<UInt32Grid>())  doProcessTypedGrid<UInt32Grid>(grid, op);
     else if (grid->template isType<Int64Grid>())  doProcessTypedGrid<Int64Grid>(grid, op);
     else return false;
     return true;

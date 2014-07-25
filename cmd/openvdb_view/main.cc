@@ -77,6 +77,11 @@ usage(const char* progName, int status)
 
 ////////////////////////////////////////
 
+namespace openvdb{
+	typedef TypedMetadata<boost::uint32_t>  UInt32Metadata;
+	typedef Grid<UInt32Tree>				UInt32Grid;
+}
+
 
 int
 main(int argc, char *argv[])
@@ -93,6 +98,8 @@ main(int argc, char *argv[])
 
     try {
         openvdb::initialize();
+		openvdb::UInt32Metadata::registerType();
+		openvdb::UInt32Grid::registerGrid();
 
         bool printInfo = false, printDebugInfo = false;
 

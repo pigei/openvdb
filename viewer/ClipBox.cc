@@ -76,8 +76,10 @@ ClipBox::setBBox(const openvdb::BBoxd& bbox)
 void
 ClipBox::update(double steps)
 {
+
+	float mult = 10.0f;
     if (mXIsActive) {
-        GLdouble s = steps * mStepSize.x() * 4.0;
+        GLdouble s = steps * mStepSize.x() * mult;
 
         if (mShiftIsDown || mCtrlIsDown) {
             mLeftPlane[3] -= s;
@@ -93,7 +95,7 @@ ClipBox::update(double steps)
     }
 
     if (mYIsActive) {
-        GLdouble s = steps * mStepSize.y() * 4.0;
+        GLdouble s = steps * mStepSize.y() * mult;
 
         if (mShiftIsDown || mCtrlIsDown) {
             mTopPlane[3] -= s;
@@ -109,7 +111,7 @@ ClipBox::update(double steps)
     }
 
     if (mZIsActive) {
-        GLdouble s = steps * mStepSize.z() * 4.0;
+        GLdouble s = steps * mStepSize.z() * mult;
 
         if (mShiftIsDown || mCtrlIsDown) {
             mFrontPlane[3] -= s;
@@ -123,6 +125,13 @@ ClipBox::update(double steps)
             mBackPlane[3] = std::max(mBackPlane[3], (-mFrontPlane[3] + mStepSize.z()));
         }
     }
+
+	std::cout << "_____________________ "<< std::endl;
+	std::cout << "x-sections: " << -mLeftPlane[3] << " , " << mRightPlane[3] << std::endl;
+	std::cout << "y-sections: " << -mTopPlane[3] << " , " << mBottomPlane[3] << std::endl;
+	std::cout << "z-sections: " << -mFrontPlane[3] << " , " << mBackPlane[3] << std::endl;
+
+
 }
 
 

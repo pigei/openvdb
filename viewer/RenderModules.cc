@@ -310,7 +310,7 @@ openvdb::Vec3s TreeTopologyOp::sNodeColors[] = {
 
 ViewportModule::ViewportModule():
     mAxisGnomonScale(1.5),
-    mGroundPlaneScale(8.0)
+    mGroundPlaneScale(16.0)
 {
 }
 

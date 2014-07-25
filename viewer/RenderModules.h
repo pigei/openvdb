@@ -536,7 +536,13 @@ public:
 
             const ValueType& value = mAccessor.getValue(ijk);
 
-            if (value < mZeroValue) { // is negative
+			bool isuint =  openvdb::typeNameAsString<uint32_t>() ==  openvdb::typeNameAsString<ValueType>() ;
+			if (isuint){
+				color[0] = (float)(((uint32_t)(value) & 0x00FF0000) >> 16)/255.0f; //R
+				color[1] = (float)(((uint32_t)(value) & 0x0000FF00) >> 8 )/255.0f;  //G
+				color[2] = (float)(((uint32_t)(value) & 0x000000FF)		 )/255.0f;  //B
+			
+			} else if (value < mZeroValue) { // is negative
                 if (mIsLevelSet) {
                     color = mColorMap[1];
                 } else {
@@ -664,9 +670,11 @@ public:
                         (maxVoxelPoints / interiorMask->leafCount()));
                 }
 
-                openvdb::tools::erodeVoxels(*interiorMask, 2);
-
-                openvdb::tree::LeafManager<BoolTreeT> maskleafs(*interiorMask);
+				if (tree.valueType() != openvdb::typeNameAsString<uint32_t>()){
+					openvdb::tools::erodeVoxels(*interiorMask, 2);
+				}
+             
+				openvdb::tree::LeafManager<BoolTreeT> maskleafs(*interiorMask);
                 std::vector<size_t> indexMap(maskleafs.leafCount());
                 size_t voxelCount = 0;
                 for (Index64 l = 0, L = maskleafs.leafCount(); l < L; ++l) {
@@ -674,23 +682,25 @@ public:
                     voxelCount += std::min(maskleafs.leaf(l).onVoxelCount(), voxelsPerLeaf);
                 }
 
-                std::vector<GLfloat> points(voxelCount * 3), colors(voxelCount * 3);
-                std::vector<GLuint> indices(voxelCount);
+				if (voxelCount > 0){
+					std::vector<GLfloat> points(voxelCount * 3), colors(voxelCount * 3);
+					std::vector<GLuint> indices(voxelCount);
 
-                PointGenerator<BoolTreeT> pointGen(
-                    points, indices, maskleafs, indexMap, grid->transform(), voxelsPerLeaf);
-                pointGen.runParallel();
-
-
-                PointAttributeGenerator<GridType> attributeGen(
-                    points, colors, *grid, minValue, maxValue, colorMap);
-                attributeGen.runParallel();
+					PointGenerator<BoolTreeT> pointGen(
+						points, indices, maskleafs, indexMap, grid->transform(), voxelsPerLeaf);
+					pointGen.runParallel();
 
 
-                // gen buffers and upload data to GPU
-                mInteriorBuffer->genVertexBuffer(points);
-                mInteriorBuffer->genColorBuffer(colors);
-                mInteriorBuffer->genIndexBuffer(indices, GL_POINTS);
+					PointAttributeGenerator<GridType> attributeGen(
+						points, colors, *grid, minValue, maxValue, colorMap);
+					attributeGen.runParallel();
+
+
+					// gen buffers and upload data to GPU
+					mInteriorBuffer->genVertexBuffer(points);
+					mInteriorBuffer->genColorBuffer(colors);
+					mInteriorBuffer->genIndexBuffer(indices, GL_POINTS);
+				}
             }
 
             { // Generate Surface Points
@@ -716,24 +726,26 @@ public:
                     voxelCount += std::min(maskleafs.leaf(l).onVoxelCount(), voxelsPerLeaf);
                 }
 
-                std::vector<GLfloat>
-                    points(voxelCount * 3),
-                    colors(voxelCount * 3),
-                    normals(voxelCount * 3);
-                std::vector<GLuint> indices(voxelCount);
+				if (voxelCount > 0){
+					std::vector<GLfloat>
+						points(voxelCount * 3),
+						colors(voxelCount * 3),
+						normals(voxelCount * 3);
+					std::vector<GLuint> indices(voxelCount);
 
-                PointGenerator<BoolTreeT> pointGen(
-                    points, indices, maskleafs, indexMap, grid->transform(), voxelsPerLeaf);
-                pointGen.runParallel();
+					PointGenerator<BoolTreeT> pointGen(
+						points, indices, maskleafs, indexMap, grid->transform(), voxelsPerLeaf);
+					pointGen.runParallel();
 
-                PointAttributeGenerator<GridType> attributeGen(
-                    points, colors, normals, *grid, minValue, maxValue, colorMap);
-                attributeGen.runParallel();
+					PointAttributeGenerator<GridType> attributeGen(
+						points, colors, normals, *grid, minValue, maxValue, colorMap);
+					attributeGen.runParallel();
 
-                mSurfaceBuffer->genVertexBuffer(points);
-                mSurfaceBuffer->genColorBuffer(colors);
-                mSurfaceBuffer->genNormalBuffer(normals);
-                mSurfaceBuffer->genIndexBuffer(indices, GL_POINTS);
+					mSurfaceBuffer->genVertexBuffer(points);
+					mSurfaceBuffer->genColorBuffer(colors);
+					mSurfaceBuffer->genNormalBuffer(normals);
+					mSurfaceBuffer->genIndexBuffer(indices, GL_POINTS);
+				}
             }
 
             return;

@@ -84,6 +84,7 @@ public:
     void render();
     void showNthGrid(size_t n);
     void updateCutPlanes(int wheelPos);
+	void updateRotate(int wheelPos);
 
     void keyCallback(int key, int action);
     void mouseButtonCallback(int button, int action);
@@ -103,6 +104,12 @@ private:
     std::string mGridName, mProgName, mGridInfo, mTransformInfo, mTreeInfo;
     int mWheelPos;
     bool mShiftIsDown, mCtrlIsDown, mShowInfo;
+
+	bool mRotateMode;
+	openvdb::math::Axis mRotateAxis;
+	openvdb::math::Mat4s mModelRotation;
+
+
 }; // class ViewerImpl
 
 
@@ -222,6 +229,9 @@ ViewerImpl::ViewerImpl()
     , mShiftIsDown(false)
     , mCtrlIsDown(false)
     , mShowInfo(true)
+	, mRotateMode(false)
+	, mRotateAxis(openvdb::math::Z_AXIS)
+	, mModelRotation(openvdb::math::Mat4f::identity())
 {
 }
 
@@ -276,10 +286,13 @@ ViewerImpl::render()
     mClipBox->render();
     mClipBox->enableClipping();
 
+
+	glPushMatrix();
+	glMultMatrixf(mModelRotation.asPointer()); //global model rotation
     for (size_t n = 1, N = mRenderModules.size(); n < N; ++n) {
         mRenderModules[n]->render();
     }
-
+	glPopMatrix();
     mClipBox->disableClipping();
 
     // Render text
@@ -525,6 +538,21 @@ ViewerImpl::updateCutPlanes(int wheelPos)
 }
 
 
+
+void
+ViewerImpl::updateRotate(int wheelPos){
+
+	float t = (mWheelPos - wheelPos);
+
+	float angle = t * 2*M_PI / 360.0;
+
+	mModelRotation.preRotate(mRotateAxis, angle);
+
+	std::cout << mModelRotation << std::endl;
+	setNeedsDisplay();
+
+}
+
 ////////////////////////////////////////
 
 
@@ -655,18 +683,36 @@ ViewerImpl::keyCallback(int key, int action)
         }
     }
 
-    switch (key) {
-    case 'x': case 'X':
-        mClipBox->activateXPlanes() = keyPress;
-        break;
-    case 'y': case 'Y':
-        mClipBox->activateYPlanes() = keyPress;
-        break;
-    case 'z': case 'Z':
-        mClipBox->activateZPlanes() = keyPress;
-        break;
-    }
+	if(mRotateMode){
+  		switch (key) {
+		case 'x': case 'X':
+			mRotateAxis = openvdb::math::X_AXIS;
+			break;
+		case 'y': case 'Y':
+			mRotateAxis = openvdb::math::Y_AXIS;
+			break;
+		case 'z': case 'Z':
+			mRotateAxis = openvdb::math::Z_AXIS;
+			break;
+		}
+	} else {
+		switch (key) {
+		case 'x': case 'X':
+			mClipBox->activateXPlanes() = keyPress;
+			break;
+		case 'y': case 'Y':
+			mClipBox->activateYPlanes() = keyPress;
+			break;
+		case 'z': case 'Z':
+			mClipBox->activateZPlanes() = keyPress;
+			break;
+		}
+	}
 
+	switch(key) {
+	case 'r': case'R':
+		mRotateMode = keyPress;
+	}
     mClipBox->shiftIsDown() = mShiftIsDown;
     mClipBox->ctrlIsDown() = mCtrlIsDown;
 
@@ -699,7 +745,9 @@ ViewerImpl::mouseWheelCallback(int pos)
 {
     if (mClipBox->isActive()) {
         updateCutPlanes(pos);
-    } else {
+	} else if (mRotateMode) {
+		updateRotate(pos);
+	} else {
         mCamera->mouseWheelCallback(pos, mWheelPos);
         if (mCamera->needsDisplay()) setNeedsDisplay();
     }
